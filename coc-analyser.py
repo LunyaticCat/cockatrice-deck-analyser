@@ -1,5 +1,6 @@
 import xml.etree.ElementTree as ET
 from collections import defaultdict
+import argparse
 
 
 # Function to extract colors from mana cost and count each type once per card
@@ -41,35 +42,41 @@ def parse_card_data(file_paths):
     return mana_costs
 
 
-# Load the card data from multiple files
-card_data_files = ['sets/cards.xml', 'sets/01.fchon.xml']  # Add paths to all card data files
-card_mana_costs = parse_card_data(card_data_files)
+def main():
+    parser = argparse.ArgumentParser(description='Analyze the colors in a Magic: The Gathering deck.')
+    parser.add_argument('--sets', nargs='+', required=True, help='Paths to the card data XML files')
+    parser.add_argument('--deck', required=True, help='Path to the deck XML file')
 
-# Load the decklist XML
-deck_tree = ET.parse('decks/Flame-Chasers.cod')
-deck_root = deck_tree.getroot()
+    args = parser.parse_args()
 
-# Initialize a dictionary to count colors in the deck and a counter for total cards
-deck_colors = {"W": 0, "U": 0, "B": 0, "R": 0, "G": 0, "C": 0}
-total_cards = 0
+    # Load the card data from specified files
+    card_mana_costs = parse_card_data(args.sets)
 
-# Iterate through each card in the deck and count colors
-for card in deck_root.findall('.//zone[@name="main"]/card'):
-    card_name = card.get('name')
-    card_number = int(card.get('number'))
-    total_cards += card_number
-    if card_name in card_mana_costs:
-        card_colors = extract_colors(card_mana_costs[card_name])
-        for color in deck_colors.keys():
-            deck_colors[color] += card_colors[color] * card_number
+    # Load the decklist XML
+    deck_tree = ET.parse(args.deck)
+    deck_root = deck_tree.getroot()
 
-# Print the result
-print("Colors in your deck:")
-for color, count in deck_colors.items():
-    print(f"{color}: {count}")
+    # Initialize a dictionary to count colors in the deck and a counter for total cards
+    deck_colors = {"W": 0, "U": 0, "B": 0, "R": 0, "G": 0, "C": 0}
+    total_cards = 0
 
-print(f"Total number of cards: {total_cards}")
+    # Iterate through each card in the deck and count colors
+    for card in deck_root.findall('.//zone[@name="main"]/card'):
+        card_name = card.get('name')
+        card_number = int(card.get('number'))
+        total_cards += card_number
+        if card_name in card_mana_costs:
+            card_colors = extract_colors(card_mana_costs[card_name])
+            for color in deck_colors.keys():
+                deck_colors[color] += card_colors[color] * card_number
 
-# Example usage
-# Save the script as analyze_deck.py and run it with the correct file paths
-# python analyze_deck.py
+    # Print the result
+    print("Colors in your deck:")
+    for color, count in deck_colors.items():
+        print(f"{color}: {count}")
+
+    print(f"Total number of cards: {total_cards}")
+
+
+if __name__ == "__main__":
+    main()
